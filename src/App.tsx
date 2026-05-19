@@ -440,14 +440,34 @@ export default function App() {
           >
             Static QR Code generator developed by QR Codes Australia
           </a>
-          <a 
-            href="https://qrcodesaustralia.com.au/dynamic-qr-codes/" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="hover:opacity-100 transition-opacity cursor-pointer"
-          >
-            Dynamic QR Codes
-          </a>
+          <div className="flex flex-wrap justify-center gap-2 opacity-60">
+            <a 
+              href="https://qrcodesaustralia.com.au/dynamic-qr-codes/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:opacity-100 transition-opacity cursor-pointer"
+            >
+              Dynamic QR Codes
+            </a>
+            <span className="opacity-40">-</span>
+            <a 
+              href="https://digitalproductcreation.au/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:opacity-100 transition-opacity cursor-pointer"
+            >
+              Training
+            </a>
+            <span className="opacity-40">-</span>
+            <a 
+              href="https://msincome.com/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:opacity-100 transition-opacity cursor-pointer"
+            >
+              Products
+            </a>
+          </div>
         </div>
       </footer>
     </div>
