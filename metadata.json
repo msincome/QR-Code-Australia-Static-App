@@ -1,0 +1,6 @@
+{
+  "name": "QR Codes Australia",
+  "description": "Professional-grade PWA QR code generator with support for URL, Phone, Text, WiFi, and VCards. Features high-res downloads, custom logos, color schemes, and generation history.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

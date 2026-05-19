@@ -1,0 +1,17 @@
+{
+  "name": "QR Codes Australia - Pro QR Generator",
+  "short_name": "QR Codes Australia",
+  "description": "Professional-grade QR code generator with custom styling and history.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FDFCFB",
+  "theme_color": "#1A1A1A",
+  "icons": [
+    {
+      "src": "https://img.icons8.com/ios-filled/512/000000/qr-code.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
