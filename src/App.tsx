@@ -10,7 +10,12 @@ import {
   Palette, 
   Image as ImageIcon, 
   ExternalLink,
-  Printer
+  Printer,
+  Share,
+  Plus,
+  Monitor,
+  Smartphone,
+  Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import QRCodeStyling from 'qr-code-styling';
@@ -46,6 +51,95 @@ export default function App() {
 
   const [wifiData, setWifiData] = useState<WiFiData>({ ssid: '', encryption: 'WPA' });
   const [vcardData, setVcardData] = useState<VCardData>({ firstName: '', lastName: '' });
+
+  // PWA & Platform States
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [platformInfo, setPlatformInfo] = useState({ os: 'Unknown', browser: 'Unknown' });
+
+  useEffect(() => {
+    // Detect standalone display mode
+    const checkStandalone = () => {
+      const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || 
+                               (navigator as any).standalone === true ||
+                               document.referrer.includes('android-app://');
+      setIsStandalone(isStandaloneMode);
+    };
+
+    checkStandalone();
+
+    // Detect Platform & Browser
+    const ua = window.navigator.userAgent;
+    let os = 'Unknown';
+    let browser = 'Unknown';
+
+    if (/android/i.test(ua)) {
+      os = 'Android';
+    } else if (/iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
+      os = 'iOS';
+    } else if (/Mac/i.test(ua)) {
+      os = 'macOS';
+    } else if (/Win/i.test(ua)) {
+      os = 'Windows';
+    } else if (/Linux/i.test(ua)) {
+      os = 'Linux';
+    } else if (/CrOS/i.test(ua)) {
+      os = 'ChromeOS';
+    }
+
+    if (/edge|edg/i.test(ua)) {
+      browser = 'Edge';
+    } else if (/opr/i.test(ua)) {
+      browser = 'Opera';
+    } else if (/chrome|crios/i.test(ua)) {
+      browser = 'Chrome';
+    } else if (/safari/i.test(ua)) {
+      browser = 'Safari';
+    } else if (/firefox|fxios/i.test(ua)) {
+      browser = 'Firefox';
+    }
+
+    setPlatformInfo({ os, browser });
+
+    // PWA Install prompt listener
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setIsInstallable(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    // Track installation completion
+    const handleAppInstalled = () => {
+      setIsStandalone(true);
+      setIsInstallable(false);
+      setDeferredPrompt(null);
+    };
+
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const triggerInstall = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    try {
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setIsStandalone(true);
+        setIsInstallable(false);
+        setDeferredPrompt(null);
+      }
+    } catch (err) {
+      console.error('PWA installation canceled or error:', err);
+    }
+  };
   const qrRef = useRef<HTMLDivElement>(null);
   const qrRefMobile = useRef<HTMLDivElement>(null);
   const qrCode = useRef<QRCodeStyling>(new QRCodeStyling({
@@ -426,6 +520,123 @@ export default function App() {
           </div>
         </section>
       </main>
+
+      {/* PWA Direct Installation & Device Integration Section */}
+      <section id="pwa-install-section" className="border-t border-[#1A1A1A] bg-white p-6 lg:p-8 shrink-0">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+          {/* Metadata Block */}
+          <div className="md:col-span-3 space-y-2">
+            <span className="text-[9px] font-mono uppercase tracking-[0.3em] opacity-40 block">06 // System Sync</span>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[#1A1A1A] flex items-center gap-1.5">
+              <Smartphone className="w-3.5 h-3.5" /> PWA Launcher
+            </h4>
+            <div className="pt-1">
+              <span className="text-[9px] font-mono tracking-tighter uppercase px-2 py-1 bg-[#F0EFEC] border border-[#1A1A1A]/10 text-stone-600 rounded-sm inline-flex items-center gap-1.5">
+                {isStandalone ? (
+                  <>
+                    <Check className="w-3 h-3 text-green-700 font-bold" /> Status: Standalone
+                  </>
+                ) : (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                    Detected: {platformInfo.os}
+                  </>
+                )}
+              </span>
+            </div>
+          </div>
+
+          {/* Core Interactive Section */}
+          <div className="md:col-span-9 border-l border-dashed border-[#1A1A1A]/20 md:pl-8 space-y-4">
+            {isStandalone ? (
+              <div className="space-y-2">
+                <p className="text-[11px] font-serif italic text-stone-700 leading-relaxed max-w-2xl">
+                  "QR Codes Australia is fully installed and operating as a native system integration on this device. You possess local app drawer launch capacity, full-screen offline operations, and lightning memory performance."
+                </p>
+                <div className="text-[9px] font-mono opacity-40">
+                  ENG CONFIG: SYSTEM_LAUNCH_SECURE_MODE // WORKSPACE SYNC ACTIVE
+                </div>
+              </div>
+            ) : isInstallable ? (
+              <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
+                <div className="space-y-1 max-w-xl">
+                  <h5 className="text-[10px] font-bold uppercase tracking-wider text-[#1A1A1A]">PWA Installer Ready</h5>
+                  <p className="text-[11px] font-serif italic text-stone-700 leading-relaxed">
+                    Install this utility directly to your {platformInfo.os} launcher/desktop. Run in full workspace view, with perfect offline security capabilities.
+                  </p>
+                </div>
+                <button 
+                  onClick={triggerInstall}
+                  className="bg-[#1A1A1A] text-white py-3.5 px-6 text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-black transition-colors shrink-0 flex items-center justify-center gap-2 border border-[#1A1A1A] active:translate-y-px cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Install Application
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <h5 className="text-[10px] font-bold uppercase tracking-wider text-[#1A1A1A]">
+                  How to Install on {platformInfo.os} / {platformInfo.browser}
+                </h5>
+                
+                {/* Custom platform-specific installation prompt instructions */}
+                {platformInfo.os === 'iOS' ? (
+                  <div className="text-[11px] space-y-2 text-stone-700 font-serif leading-relaxed">
+                    <p className="italic">
+                      "Apple iOS configurations require manual alignment to Home Screen. Follow this editorial integration guide:"
+                    </p>
+                    <ol className="list-decimal list-inside space-y-1.5 text-[11px] font-sans text-stone-800">
+                      <li>
+                        Tap the <strong className="font-bold underline">Safari Share Button</strong> <Share className="w-3 h-3 inline mx-1 text-blue-900" /> at the bottom bar of your mobile screen.
+                      </li>
+                      <li>
+                        Scroll down and click <strong className="font-bold">"Add to Home Screen"</strong> (with the plus sign).
+                      </li>
+                      <li>
+                        Confirm the application name and click <strong className="font-bold text-[#1A1A1A]">"Add"</strong> in the top-right corner.
+                      </li>
+                    </ol>
+                  </div>
+                ) : platformInfo.os === 'macOS' && platformInfo.browser === 'Safari' ? (
+                  <div className="text-[11px] space-y-2 text-stone-700 font-serif leading-relaxed">
+                    <p className="italic">
+                      "Utilizing macOS local engine. Connect this web-system directly onto your Dock space:"
+                    </p>
+                    <ol className="list-decimal list-inside space-y-1.5 text-[11px] font-sans text-stone-800">
+                      <li>
+                        Click the <strong className="font-bold text-[#1A1A1A]">Share Button</strong> (box with upward arrow) in the top right of your Safari bar.
+                      </li>
+                      <li>
+                        Select <strong className="font-bold">"Add to Dock"</strong> to spawn a permanent application bundle.
+                      </li>
+                      <li>
+                        Open newly integrated app directly from your macOS Dock workspace.
+                      </li>
+                    </ol>
+                  </div>
+                ) : (platformInfo.browser === 'Chrome' || platformInfo.browser === 'Edge') ? (
+                  <div className="text-[11px] space-y-1.5 text-stone-700 leading-relaxed font-serif">
+                    <p className="italic">
+                      "Automated setup launcher not showing? Trigger installation via manual browser integration:"
+                    </p>
+                    <p className="text-[11px] font-sans text-stone-800">
+                      Click the <strong className="font-bold underline">Install Symbol</strong> (computer with a downward arrow) in the right-hand corner of your browser's search-bar, or select <strong className="font-bold">"Install QR Codes Australia"</strong> from your browser settings dropdown menu (⋮ / …).
+                    </p>
+                  </div>
+                ) : (
+                  <div className="text-[11px] space-y-1 text-stone-700 leading-relaxed font-serif">
+                    <p className="italic">
+                      "Your standard web software operates without direct engine prompts. Integrate easily:"
+                    </p>
+                    <p className="text-[11px] font-sans text-stone-800">
+                      Inside your browser settings menu (usually top right), locate and select <strong className="font-bold">"Add to Home screen"</strong>, <strong className="font-bold">"Install Page as App"</strong>, or try loaded in <strong className="font-bold">Google Chrome / Apple Safari</strong> for automatic system execution.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
 
       {/* Editorial Footer */}
       <footer className="h-auto lg:h-12 border-t border-[#1A1A1A] flex flex-col lg:flex-row items-center justify-center px-6 lg:px-8 py-4 lg:py-0 text-[9px] uppercase tracking-[0.2em] lg:tracking-[0.4em] font-bold shrink-0 bg-white gap-4 lg:gap-12">
