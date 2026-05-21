@@ -41,8 +41,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<QRType>('url');
   const [config, setConfig] = useState<QRConfig>({
     type: 'url',
-    value: '',
-    label: '',
+    value: 'https://qrcodesaustralia.com.au',
+    label: 'QR Codes Australia',
     dotsColor: '#1A1A1A',
     bgColor: '#FFFFFF',
     dotsType: 'square',
@@ -142,9 +142,18 @@ export default function App() {
   };
   const qrRef = useRef<HTMLDivElement>(null);
   const qrRefMobile = useRef<HTMLDivElement>(null);
-  const qrCode = useRef<QRCodeStyling>(new QRCodeStyling({
+  const qrCodeDesktop = useRef<QRCodeStyling>(new QRCodeStyling({
     width: 300,
     height: 300,
+    dotsOptions: { type: 'square' },
+    cornersSquareOptions: { type: 'square' },
+    backgroundOptions: { color: "#FFFFFF" },
+    imageOptions: { crossOrigin: "anonymous", margin: 10 },
+    qrOptions: { errorCorrectionLevel: "H" }
+  }));
+  const qrCodeMobile = useRef<QRCodeStyling>(new QRCodeStyling({
+    width: 250,
+    height: 250,
     dotsOptions: { type: 'square' },
     cornersSquareOptions: { type: 'square' },
     backgroundOptions: { color: "#FFFFFF" },
@@ -155,10 +164,12 @@ export default function App() {
   // Initialize QR Code Styling
   useEffect(() => {
     if (qrRef.current) {
-      qrCode.current.append(qrRef.current);
+      qrRef.current.innerHTML = '';
+      qrCodeDesktop.current.append(qrRef.current);
     }
     if (qrRefMobile.current) {
-      qrCode.current.append(qrRefMobile.current);
+      qrRefMobile.current.innerHTML = '';
+      qrCodeMobile.current.append(qrRefMobile.current);
     }
   }, []);
 
@@ -171,38 +182,44 @@ export default function App() {
       value = config.value;
       label = config.value || 'URL';
     } else if (activeTab === 'phone') {
-      value = `tel:${config.value}`;
+      value = config.value ? `tel:${config.value}` : '';
       label = config.value || 'Phone';
     } else if (activeTab === 'text') {
       value = config.value;
       label = config.value.slice(0, 20) || 'Text';
     } else if (activeTab === 'wifi') {
       const { ssid, password, encryption, hidden } = wifiData;
-      value = `WIFI:T:${encryption};S:${ssid};P:${password || ''};H:${hidden ? 'true' : ''};;`;
+      value = ssid ? `WIFI:T:${encryption};S:${ssid};P:${password || ''};H:${hidden ? 'true' : ''};;` : '';
       label = ssid || 'WiFi';
     } else if (activeTab === 'vcard') {
       const { firstName, lastName, organization, phone, email, url, address } = vcardData;
-      // vCard 3.0 Standard Formatting with CRLF for better compatibility
-      const lines = [
-        'BEGIN:VCARD',
-        'VERSION:3.0',
-        `N:${lastName || ''};${firstName || ''};;;`,
-        `FN:${(firstName || '') + ' ' + (lastName || '')}`.trim() || 'Contact',
-      ];
+      if (firstName || lastName) {
+        const lines = [
+          'BEGIN:VCARD',
+          'VERSION:3.0',
+          `N:${lastName || ''};${firstName || ''};;;`,
+          `FN:${(firstName || '') + ' ' + (lastName || '')}`.trim() || 'Contact',
+        ];
 
-      if (organization) lines.push(`ORG:${organization}`);
-      if (phone) lines.push(`TEL;TYPE=CELL:${phone}`);
-      if (email) lines.push(`EMAIL;TYPE=INTERNET:${email}`);
-      if (address) lines.push(`ADR;TYPE=HOME:;;${address};;;;`);
-      if (url) lines.push(`URL:${url}`);
+        if (organization) lines.push(`ORG:${organization}`);
+        if (phone) lines.push(`TEL;TYPE=CELL:${phone}`);
+        if (email) lines.push(`EMAIL;TYPE=INTERNET:${email}`);
+        if (address) lines.push(`ADR;TYPE=HOME:;;${address};;;;`);
+        if (url) lines.push(`URL:${url}`);
 
-      lines.push('END:VCARD');
-      value = lines.join('\r\n') + '\r\n';
-      label = `${firstName} ${lastName}`.trim() || 'vCard';
+        lines.push('END:VCARD');
+        value = lines.join('\r\n') + '\r\n';
+        label = `${firstName} ${lastName}`.trim() || 'vCard';
+      } else {
+        value = '';
+        label = 'vCard';
+      }
     }
 
-    qrCode.current.update({
-      data: value || 'https://qrcraft.app',
+    const qrData = value || 'https://qrcodesaustralia.com.au';
+
+    const updateOptions = {
+      data: qrData,
       dotsOptions: { 
         color: config.dotsColor,
         type: config.dotsType 
@@ -211,14 +228,17 @@ export default function App() {
       cornersSquareOptions: { type: config.cornersType },
       cornersDotOptions: { type: config.cornersType },
       image: config.logo
-    });
+    };
+
+    qrCodeDesktop.current.update(updateOptions);
+    qrCodeMobile.current.update(updateOptions);
 
     setConfig(prev => ({ ...prev, label }));
   }, [activeTab, config.value, config.dotsColor, config.bgColor, config.dotsType, config.cornersType, config.logo, wifiData, vcardData]);
 
 
   const handleDownload = useCallback((ext: 'png' | 'svg' | 'webp') => {
-    qrCode.current.download({ name: `qrcraft-${config.label.replace(/\s+/g, '-').toLowerCase()}`, extension: ext });
+    qrCodeDesktop.current.download({ name: `qrcodesaustralia-${config.label.replace(/\s+/g, '-').toLowerCase()}`, extension: ext });
   }, [config.label]);
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -256,8 +276,8 @@ export default function App() {
           <div className="bg-white p-6 shadow-xl border border-[#1A1A1A]">
             <div 
               ref={qrRefMobile} 
-              className="w-[200px] h-[200px] flex items-center justify-center overflow-hidden cursor-pointer" 
-              onClick={() => qrCode.current.download({ name: `qrcraft-matrix`, extension: 'png' })}
+              className="qr-container w-[200px] h-[200px] flex items-center justify-center overflow-hidden cursor-pointer" 
+              onClick={() => handleDownload('png')}
             />
           </div>
           <span className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-40">Tap to Quick Export</span>
@@ -508,9 +528,9 @@ export default function App() {
             <span className="text-2xl font-serif italic">V4 (Adaptive)</span>
           </div>
 
-          <div className="flex-1 flex items-center justify-center p-12">
-            <div className="relative p-12 bg-white shadow-[20px_20px_0px_0px_#1A1A1A] border border-[#1A1A1A] transition-all duration-500 hover:shadow-[30px_30px_0px_0px_#1A1A1A] hover:-translate-x-1 hover:-translate-y-1">
-              <div ref={qrRef} className="qr-container bg-white" />
+          <div className="flex-1 flex items-center justify-center p-4 sm:p-8 lg:p-12">
+            <div className="relative p-6 sm:p-10 lg:p-12 bg-white shadow-[12px_12px_0px_0px_#1A1A1A] sm:shadow-[20px_20px_0px_0px_#1A1A1A] border border-[#1A1A1A] transition-all duration-500 hover:shadow-[16px_16px_0px_0px_#1A1A1A] sm:hover:shadow-[30px_30px_0px_0px_#1A1A1A] hover:-translate-x-1 hover:-translate-y-1 max-w-[85%] sm:max-w-[420px] w-full flex items-center justify-center">
+              <div ref={qrRef} className="qr-container bg-white w-full aspect-square flex items-center justify-center img-fluid" />
             </div>
           </div>
 

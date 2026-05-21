@@ -26,4 +26,17 @@
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     @apply bg-[#1A1A1A]/40;
   }
+
+  /* Responsive QR styling wrapper to prevent any cropped boundaries */
+  .qr-container > canvas,
+  .qr-container > svg,
+  .qr-container canvas,
+  .qr-container svg {
+    max-width: 100% !important;
+    max-height: 100% !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    display: block !important;
+  }
 }
